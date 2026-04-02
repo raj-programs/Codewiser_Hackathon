@@ -1,4 +1,4 @@
-import { Skill, SkillGraph } from '../types';
+import { Skill, SkillGraph } from './index';
 
 export class TopologicalSort {
   static sort(skillGraph: SkillGraph): string[] {

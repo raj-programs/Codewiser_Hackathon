@@ -1,4 +1,4 @@
-import { Rule, UserContext, SkillGraph, SkillGap, Skill } from '../types';
+import { Rule, UserContext, SkillGraph, SkillGap, Skill } from './index';
 
 export class RuleEngine {
   private rules: Rule[] = [];

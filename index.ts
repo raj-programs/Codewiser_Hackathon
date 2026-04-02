@@ -1,3 +1,6 @@
+export { RoadmapGenerator } from "./RoadmapGenerator";
+export { SkillGraphManager } from "./SkillGraph";
+
 export interface Skill {
   id: string;
   name: string;

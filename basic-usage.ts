@@ -3,7 +3,7 @@ import {
   SkillGraphManager, 
   UserContext, 
   Skill 
-} from '../src';
+} from './index';
 
 function createSampleSkillGraph(): SkillGraphManager {
   const skillManager = new SkillGraphManager();
@@ -203,26 +203,33 @@ function main() {
 
     console.log('📚 Learning Steps:');
     result.learningPath.skills
-      .filter(step => step.status === 'pending')
+      .filter((step: { status: string }) => step.status === 'pending')
       .slice(0, 5)
-      .forEach(step => {
+      .forEach((step: {
+        order: number;
+        skill: { name: string; difficulty: string; description: string };
+        estimatedHours: number;
+        resources: any[];
+      }) => {
         console.log(`${step.order}. ${step.skill.name} (${step.skill.difficulty}) - ${step.estimatedHours}h`);
         console.log(`   ${step.skill.description}`);
         console.log(`   Resources: ${step.resources.length} available\n`);
       });
 
     console.log('🎯 Milestones:');
-    result.learningPath.milestones.forEach((milestone, index) => {
+    result.learningPath.milestones.forEach((milestone: any, index: number) => {
       console.log(`${index + 1}. ${milestone.title}`);
       console.log(`   ${milestone.description}`);
       console.log(`   Required Skills: ${milestone.requiredSkills.length}\n`);
     });
 
     console.log('⚠️ Skill Gaps:');
-    result.skillGaps.slice(0, 3).forEach(gap => {
-      console.log(`- ${gap.skill.name} (${gap.priority} priority, ${gap.gapType})`);
-      console.log(`  ${gap.reason}\n`);
-    });
+    result.skillGaps
+      .slice(0, 3)
+      .forEach((gap: { skill: { name: string }; priority: string; gapType: string; reason: string }) => {
+        console.log(`- ${gap.skill.name} (${gap.priority} priority, ${gap.gapType})`);
+        console.log(`  ${gap.reason}\n`);
+      });
 
     console.log('📋 Summary:');
     console.log(result.summary);

@@ -1,9 +1,9 @@
-import { UserContext, SkillGraph, LearningPath, LearningStep, Milestone, SkillGap } from './types';
-import { SkillGraphManager } from './skill-graph/SkillGraph';
-import { GapAnalysisEngine } from './gap-analysis/GapAnalysisEngine';
-import { RuleEngine } from './rules/RuleEngine';
-import { TopologicalSort } from './algorithms/TopologicalSort';
-import { ExplanationEngine } from './explanation/ExplanationEngine';
+import { UserContext, SkillGraph, LearningPath, LearningStep, Milestone, SkillGap } from './index';
+import { SkillGraphManager } from './SkillGraph';
+import { GapAnalysisEngine } from './GapAnalysisEngine';
+import { RuleEngine } from './RuleEngine';
+import { TopologicalSort } from './TopologicalSort';
+import { ExplanationEngine } from './ExplanationEngine';
 
 export class RoadmapGenerator {
   private skillGraphManager: SkillGraphManager;
@@ -78,7 +78,7 @@ export class RoadmapGenerator {
     
     skillGaps.forEach(gap => relevantSkills.add(gap.skillId));
     targetSkills.forEach(skillId => relevantSkills.add(skillId));
-    userContext.currentSkills.forEach(skillId => relevantSkills.add(skillId));
+    userContext.currentSkills.forEach((skillId : string) => relevantSkills.add(skillId));
 
     const skillGraph = this.skillGraphManager.getGraph();
     const sortedSkillIds = TopologicalSort.sortSubset(skillGraph, relevantSkills);

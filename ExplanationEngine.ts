@@ -1,5 +1,5 @@
-import { Skill, UserContext, LearningPath, LearningStep, Explanation, SkillGap } from '../types';
-import { TopologicalSort } from '../algorithms/TopologicalSort';
+import { Skill, UserContext, LearningPath, LearningStep, Explanation, SkillGap } from './index';
+import { TopologicalSort } from './TopologicalSort';
 
 export class ExplanationEngine {
   generatePathExplanation(
@@ -33,8 +33,8 @@ export class ExplanationEngine {
       reasoning.push(`Builds upon: ${skill.prerequisites.length} prerequisite(s)`);
     }
 
-    if (userContext.goals.some(goal => skill.tags.includes(goal))) {
-      reasoning.push(`Directly supports your goal: ${userContext.goals.find(g => skill.tags.includes(g))}`);
+    if (userContext.goals.some((goal: string) => skill.tags.includes(goal))) {
+      reasoning.push(`Directly supports your goal: ${userContext.goals.find((g: string) => skill.tags.includes(g))}`);
     }
 
     if (userContext.targetRole && skill.tags.includes(userContext.targetRole)) {
@@ -98,7 +98,7 @@ export class ExplanationEngine {
     const alternatives: string[] = [];
 
     if (skill.resources.length > 1) {
-      const resourceTypes = [...new Set(skill.resources.map(r => r.type))];
+      const resourceTypes = [...new Set(skill.resources.map((r: { type: string }) => r.type))];
       if (resourceTypes.length > 1) {
         alternatives.push(`Choose from ${resourceTypes.join(', ')} learning formats`);
       }
@@ -248,12 +248,12 @@ export class ExplanationEngine {
 
     summary += '## Next Steps\n\n';
     const nextSteps = learningPath.skills
-      .filter(step => step.status === 'pending')
+      .filter((step: LearningStep) => step.status === 'pending')
       .slice(0, 3);
     
     if (nextSteps.length > 0) {
       summary += 'Start with these skills:\n';
-      nextSteps.forEach((step, index) => {
+      nextSteps.forEach((step: LearningStep, index: number) => {
         summary += `${index + 1}. **${step.skill.name}** (${step.skill.estimatedHours}h)\n`;
       });
     }
