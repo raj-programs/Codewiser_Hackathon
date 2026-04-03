@@ -150,4 +150,166 @@ export class SkillGraphManager {
     }
     return newGraph;
   }
+<<<<<<< HEAD
+
+  // Enhanced DAG methods
+  getLongestPath(sourceId?: string): { path: string[]; totalHours: number } {
+    const distances = new Map<string, number>();
+    const predecessors = new Map<string, string | null>();
+    
+    // Initialize distances
+    for (const skillId of this.graph.nodes.keys()) {
+      distances.set(skillId, sourceId === skillId ? 0 : -Infinity);
+      predecessors.set(skillId, null);
+    }
+
+    // Topological sort
+    const sorted = this.topologicalSort();
+    
+    // Relax edges
+    for (const u of sorted) {
+      if (distances.get(u)! === -Infinity) continue;
+      
+      const neighbors = this.graph.adjacencyList.get(u) || new Set();
+      for (const v of neighbors) {
+        const uSkill = this.graph.nodes.get(u)!;
+        const vSkill = this.graph.nodes.get(v)!;
+        const weight = vSkill.estimatedHours;
+        
+        if (distances.get(u)! + weight > distances.get(v)!) {
+          distances.set(v, distances.get(u)! + weight);
+          predecessors.set(v, u);
+        }
+      }
+    }
+
+    // Find longest path
+    let maxDistance = 0;
+    let endNode = sourceId || '';
+    for (const [node, distance] of distances) {
+      if (distance > maxDistance) {
+        maxDistance = distance;
+        endNode = node;
+      }
+    }
+
+    // Reconstruct path
+    const path: string[] = [];
+    let current: string | null = endNode;
+    while (current !== null) {
+      path.unshift(current);
+      current = predecessors.get(current) || null;
+    }
+
+    return { path, totalHours: maxDistance };
+  }
+
+  getCriticalPath(): { path: string[]; totalHours: number } {
+    return this.getLongestPath();
+  }
+
+  topologicalSort(): string[] {
+    const inDegree = new Map<string, number>();
+    const queue: string[] = [];
+    const result: string[] = [];
+
+    // Calculate in-degrees
+    for (const skillId of this.graph.nodes.keys()) {
+      inDegree.set(skillId, 0);
+    }
+
+    for (const [from, neighbors] of this.graph.edges) {
+      for (const to of neighbors) {
+        inDegree.set(to, (inDegree.get(to) || 0) + 1);
+      }
+    }
+
+    // Find nodes with no incoming edges
+    for (const [skillId, degree] of inDegree) {
+      if (degree === 0) {
+        queue.push(skillId);
+      }
+    }
+
+    // Process queue
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      result.push(current);
+
+      const neighbors = this.graph.adjacencyList.get(current) || new Set();
+      for (const neighbor of neighbors) {
+        const newDegree = (inDegree.get(neighbor) || 0) - 1;
+        inDegree.set(neighbor, newDegree);
+        
+        if (newDegree === 0) {
+          queue.push(neighbor);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  getLevels(): string[][] {
+    const levels: string[][] = [];
+    const visited = new Set<string>();
+    const sorted = this.topologicalSort();
+    
+    const skillToLevel = new Map<string, number>();
+    
+    for (const skillId of sorted) {
+      const prereqs = this.getPrerequisites(skillId);
+      if (prereqs.length === 0) {
+        skillToLevel.set(skillId, 0);
+      } else {
+        const maxPrereqLevel = Math.max(...prereqs.map(p => skillToLevel.get(p.id) || 0));
+        skillToLevel.set(skillId, maxPrereqLevel + 1);
+      }
+    }
+
+    // Group by level
+    const levelToSkills = new Map<number, string[]>();
+    for (const [skillId, level] of skillToLevel) {
+      if (!levelToSkills.has(level)) {
+        levelToSkills.set(level, []);
+      }
+      levelToSkills.get(level)!.push(skillId);
+    }
+
+    // Sort levels
+    const sortedLevels = Array.from(levelToSkills.keys()).sort((a, b) => a - b);
+    return sortedLevels.map(level => levelToSkills.get(level)!);
+  }
+
+  getGraphMetrics(): {
+    totalNodes: number;
+    totalEdges: number;
+    maxDepth: number;
+    avgBranchingFactor: number;
+    criticalPathLength: number;
+  } {
+    const totalNodes = this.graph.nodes.size;
+    let totalEdges = 0;
+    
+    for (const neighbors of this.graph.edges.values()) {
+      totalEdges += neighbors.size;
+    }
+
+    const levels = this.getLevels();
+    const maxDepth = levels.length;
+    
+    const avgBranchingFactor = totalNodes > 0 ? totalEdges / totalNodes : 0;
+    const criticalPathLength = this.getCriticalPath().path.length;
+
+    return {
+      totalNodes,
+      totalEdges,
+      maxDepth,
+      avgBranchingFactor,
+      criticalPathLength
+    };
+  }
 }
+=======
+}
+>>>>>>> c047648de758ac8f043c0a1a2395c78347ea2ca2
