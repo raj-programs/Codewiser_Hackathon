@@ -6,6 +6,7 @@ function App() {
     goal: 'fullstack',
     timePerWeek: '10'
   });
+
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
@@ -25,21 +26,30 @@ function App() {
     setResult(null);
 
     try {
-      const response = await fetch('/generate-roadmap', {
+      const response = await fetch('http://localhost:3000/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          userContext: {
+            currentSkills: formData.skills.split(',').map(s => s.trim()),
+            experienceLevel: 'beginner',
+            goals: [formData.goal],
+            preferredLearningStyle: 'mixed',
+            timeCommitment: parseInt(formData.timePerWeek)
+          },
+          targetSkills: [formData.goal]
+        }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to generate roadmap');
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to generate roadmap');
       }
 
-      const data = await response.json();
-      setResult(data);
+      setResult(data.data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -50,165 +60,112 @@ function App() {
   return (
     <div className="container">
       <header>
-        <h1>Smart Developer Roadmap Generator</h1>
-        <p>Create your personalized learning path using deterministic skill analysis</p>
+        <h1>Smart Developer Roadmap Generator 🚀</h1>
+        <p>Generate your personalized learning path</p>
       </header>
 
       <main>
+        {/* FORM */}
         <section className="form-section">
-          <h2>Generate Your Roadmap</h2>
+          <h2>Generate Roadmap</h2>
+
           <form onSubmit={handleSubmit} className="roadmap-form">
-            <div className="form-group">
-              <label htmlFor="skills">Current Skills (comma separated)</label>
-              <input
-                type="text"
-                id="skills"
-                name="skills"
-                value={formData.skills}
-                onChange={handleInputChange}
-                placeholder="e.g., html-basics, css-basics"
-                required
-              />
-            </div>
+            <input
+              type="text"
+              name="skills"
+              placeholder="Enter skills (e.g., html-basics)"
+              value={formData.skills}
+              onChange={handleInputChange}
+              required
+            />
 
-            <div className="form-group">
-              <label htmlFor="goal">Learning Goal</label>
-              <select
-                id="goal"
-                name="goal"
-                value={formData.goal}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="fullstack">Full Stack Development</option>
-                <option value="frontend">Frontend Development</option>
-                <option value="backend">Backend Development</option>
-              </select>
-            </div>
+            <select
+              name="goal"
+              value={formData.goal}
+              onChange={handleInputChange}
+            >
+              <option value="fullstack">Fullstack</option>
+              <option value="frontend">Frontend</option>
+              <option value="backend">Backend</option>
+            </select>
 
-            <div className="form-group">
-              <label htmlFor="timePerWeek">Hours per week</label>
-              <input
-                type="number"
-                id="timePerWeek"
-                name="timePerWeek"
-                value={formData.timePerWeek}
-                onChange={handleInputChange}
-                min="1"
-                max="40"
-                required
-              />
-            </div>
+            <input
+              type="number"
+              name="timePerWeek"
+              value={formData.timePerWeek}
+              onChange={handleInputChange}
+            />
 
-            <button type="submit" disabled={loading} className="submit-btn">
-              {loading ? 'Generating...' : 'Generate Roadmap'}
+            <button type="submit">
+              {loading ? "Generating..." : "Generate Roadmap"}
             </button>
           </form>
         </section>
 
+        {/* ERROR */}
         {error && (
-          <section className="error-section">
-            <div className="error-message">
-              <h3>Error</h3>
-              <p>{error}</p>
-            </div>
-          </section>
+          <div className="card">
+            <h3>Error</h3>
+            <p>{error}</p>
+          </div>
         )}
 
+        {/* RESULT */}
         {result && (
-          <section className="results-section">
-            <h2>Your Learning Roadmap</h2>
-            
-            {/* Summary */}
+          <>
+            {/* SUMMARY */}
             <div className="card">
               <h3>Summary</h3>
-              <div className="summary-content">
-                <p><strong>Path:</strong> {result.roadmap.title}</p>
-                <p><strong>Total Skills:</strong> {result.roadmap.skills.length}</p>
-                <p><strong>Estimated Time:</strong> {result.roadmap.totalEstimatedHours} hours</p>
-                <p><strong>Milestones:</strong> {result.milestones.length}</p>
-              </div>
+              <p><strong>Path:</strong> {result.title}</p>
+              <p><strong>Total Hours:</strong> {result.totalHours}</p>
+              <p><strong>Milestones:</strong> {result.milestones?.length}</p>
             </div>
 
-            {/* Learning Steps */}
+            {/* STEPS */}
             <div className="card">
               <h3>Learning Steps</h3>
-              <div className="steps-list">
-                {result.roadmap.skills
-                  .filter(step => step.status === 'pending')
-                  .map((step, index) => (
-                    <div key={step.skill.id} className="step-item">
-                      <div className="step-header">
-                        <h4>{index + 1}. {step.skill.name}</h4>
-                        <span className={`difficulty ${step.skill.difficulty}`}>
-                          {step.skill.difficulty}
-                        </span>
-                      </div>
-                      <p className="step-description">{step.skill.description}</p>
-                      <div className="step-details">
-                        <span className="hours">⏱️ {step.estimatedHours} hours</span>
-                        <span className="resources">📚 {step.resources.length} resources</span>
-                      </div>
-                    </div>
-                  ))}
-              </div>
+
+              {(result.steps || []).map((step, index) => (
+                <div key={step.skill.id}>
+                  <h4>{index + 1}. {step.skill.name}</h4>
+                  <p>{step.skill.description}</p>
+                  <p>⏱ {step.estimatedHours} hours</p>
+                </div>
+              ))}
             </div>
 
-            {/* Milestones */}
+            {/* MILESTONES */}
             <div className="card">
               <h3>Milestones</h3>
-              <div className="milestones-list">
-                {result.milestones.map((milestone, index) => (
-                  <div key={milestone.id} className="milestone-item">
-                    <h4>{index + 1}. {milestone.title}</h4>
-                    <p>{milestone.description}</p>
-                    <div className="milestone-details">
-                      <span className="required-skills">
-                        📋 {milestone.requiredSkills.length} skills required
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+
+              {(result.milestones || []).map((m, i) => (
+                <div key={m.id}>
+                  <h4>{i + 1}. {m.title}</h4>
+                  <p>{m.description}</p>
+                </div>
+              ))}
             </div>
 
-            {/* Skill Gaps */}
+            {/* SKILL GAPS */}
             <div className="card">
               <h3>Skill Gaps</h3>
-              <div className="gaps-list">
-                {result.skillGaps.slice(0, 5).map((gap) => (
-                  <div key={gap.skillId} className="gap-item">
-                    <div className="gap-header">
-                      <h4>{gap.skill.name}</h4>
-                      <span className={`priority ${gap.priority}`}>
-                        {gap.priority} priority
-                      </span>
-                    </div>
-                    <p><strong>Type:</strong> {gap.gapType}</p>
-                    <p><strong>Reason:</strong> {gap.reason}</p>
-                  </div>
-                ))}
-              </div>
+
+              {(result.gaps || []).map((g, i) => (
+                <div key={g.skillId}>
+                  <h4>{g.skill.name}</h4>
+                  <p>{g.reason}</p>
+                </div>
+              ))}
             </div>
 
-            {/* Explanation */}
+            {/* EXPLANATION */}
             <div className="card">
               <h3>Why This Roadmap?</h3>
-              <div className="explanation-content">
-                <div className="explanation-text">
-                  {result.summary.split('\n').map((paragraph, index) => (
-                    paragraph.trim() && <p key={index}>{paragraph}</p>
-                  ))}
-                </div>
-              </div>
+              <p>{result.summary}</p>
             </div>
-          </section>
+          </>
         )}
       </main>
-
-      <footer>
-        <p>Powered by deterministic skill analysis algorithms</p>
-      </footer>
     </div>
   );
 }
