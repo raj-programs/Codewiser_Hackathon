@@ -1,9 +1,9 @@
 import { 
-  RoadmapGenerator, 
-  SkillGraphManager, 
   UserContext, 
   Skill 
-} from '../src';
+} from './index';
+import { RoadmapGenerator } from './RoadmapGenerator';
+import { SkillGraphManager } from './SkillGraph';
 
 function createSampleSkillGraph(): SkillGraphManager {
   const skillManager = new SkillGraphManager();

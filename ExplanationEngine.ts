@@ -1,5 +1,5 @@
-import { Skill, UserContext, LearningPath, LearningStep, Explanation, SkillGap } from '../types';
-import { TopologicalSort } from '../algorithms/TopologicalSort';
+import { Skill, UserContext, LearningPath, LearningStep, Explanation, SkillGap } from './index';
+import { TopologicalSort } from './TopologicalSort';
 
 export class ExplanationEngine {
   generatePathExplanation(

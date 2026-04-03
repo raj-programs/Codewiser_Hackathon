@@ -1,9 +1,9 @@
-import { UserContext, SkillGraph, LearningPath, LearningStep, Milestone, SkillGap } from './types';
-import { SkillGraphManager } from './skill-graph/SkillGraph';
-import { GapAnalysisEngine } from './gap-analysis/GapAnalysisEngine';
-import { RuleEngine } from './rules/RuleEngine';
-import { TopologicalSort } from './algorithms/TopologicalSort';
-import { ExplanationEngine } from './explanation/ExplanationEngine';
+import { UserContext, SkillGraph, LearningPath, LearningStep, Milestone, SkillGap } from './index';
+import { SkillGraphManager } from './SkillGraph';
+import { GapAnalysisEngine } from './GapAnalysisEngine';
+import { RuleEngine } from './RuleEngine';
+import { TopologicalSort } from './TopologicalSort';
+import { ExplanationEngine } from './ExplanationEngine';
 
 export class RoadmapGenerator {
   private skillGraphManager: SkillGraphManager;
@@ -25,12 +25,20 @@ export class RoadmapGenerator {
       includeRecommended?: boolean;
       maxRecommendedSkills?: number;
       customRules?: any[];
+      optimizeForTime?: boolean;
+      includeCriticalPath?: boolean;
     } = {}
   ): {
     learningPath: LearningPath;
     skillGaps: SkillGap[];
     explanations: any[];
     summary: string;
+    metrics: {
+      totalEstimatedHours: number;
+      criticalPathHours: number;
+      graphDepth: number;
+      optimizationSavings?: number;
+    };
   } {
     const skillGraph = this.skillGraphManager.getGraph();
     
@@ -38,6 +46,11 @@ export class RoadmapGenerator {
     if (!validation.isValid) {
       throw new Error(`Invalid skill graph: ${validation.errors.join(', ')}`);
     }
+
+    // Get graph metrics for enhanced analysis
+    const graphMetrics = this.skillGraphManager.getGraphMetrics();
+    const criticalPath = this.skillGraphManager.getCriticalPath();
+    const levels = this.skillGraphManager.getLevels();
 
     let skillGaps = this.gapAnalysisEngine.analyzeGaps(userContext, skillGraph, targetSkills);
 
@@ -61,11 +74,124 @@ export class RoadmapGenerator {
     const explanations = this.explanationEngine.generatePathExplanation(learningPath, userContext);
     const summary = this.explanationEngine.generateOverallSummary(learningPath, userContext, skillGaps);
 
+    // Calculate metrics
+    const totalEstimatedHours = learningPath.totalEstimatedHours;
+    const metrics = {
+      totalEstimatedHours,
+      criticalPathHours: criticalPath.totalHours,
+      graphDepth: graphMetrics.maxDepth,
+      optimizationSavings: options.optimizeForTime ? 
+        Math.max(0, criticalPath.totalHours - totalEstimatedHours) : undefined
+    };
+
     return {
       learningPath,
       skillGaps,
       explanations,
-      summary
+      summary,
+      metrics
+    };
+  }
+
+  // Enhanced DAG-specific methods
+  generateMultiplePaths(userContext: UserContext, targetSkills: string[]): {
+    shortestPath: { path: string[]; hours: number };
+    longestPath: { path: string[]; hours: number };
+    alternativePaths: Array<{ path: string[]; hours: number; reasoning: string }>;
+  } {
+    const skillGraph = this.skillGraphManager.getGraph();
+    const paths: Array<{ path: string[]; hours: number; reasoning: string }> = [];
+    
+    // Get critical path (longest)
+    const criticalPath = this.skillGraphManager.getCriticalPath();
+    
+    // Generate alternative paths by considering different skill combinations
+    for (const targetSkill of targetSkills) {
+      const path = this.skillGraphManager.getLongestPath(targetSkill);
+      if (path.path.length > 0) {
+        paths.push({
+          path: path.path,
+          hours: path.totalHours,
+          reasoning: `Focus path for ${targetSkill} with all prerequisites`
+        });
+      }
+    }
+    
+    // Sort by duration
+    paths.sort((a, b) => a.hours - b.hours);
+    
+    return {
+      shortestPath: paths[0] || { path: [], hours: 0 },
+      longestPath: { path: criticalPath.path, hours: criticalPath.totalHours },
+      alternativePaths: paths.slice(1, -1) // Exclude shortest and longest
+    };
+  }
+
+  optimizeLearningPath(
+    userContext: UserContext, 
+    skillGaps: SkillGap[],
+    optimizationCriteria: 'time' | 'difficulty' | 'prerequisites' = 'time'
+  ): SkillGap[] {
+    switch (optimizationCriteria) {
+      case 'time':
+        return skillGaps.sort((a, b) => a.skill.estimatedHours - b.skill.estimatedHours);
+      
+      case 'difficulty':
+        const difficultyOrder = { 'beginner': 1, 'intermediate': 2, 'advanced': 3, 'expert': 4 };
+        return skillGaps.sort((a, b) => 
+          difficultyOrder[a.skill.difficulty] - difficultyOrder[b.skill.difficulty]
+        );
+      
+      case 'prerequisites':
+        // Sort by dependency chain length (shortest chains first)
+        return skillGaps.sort((a, b) => {
+          const aPrereqs = this.skillGraphManager.getPrerequisites(a.skillId).length;
+          const bPrereqs = this.skillGraphManager.getPrerequisites(b.skillId).length;
+          return aPrereqs - bPrereqs;
+        });
+      
+      default:
+        return skillGaps;
+    }
+  }
+
+  analyzeComplexity(): {
+    cyclomaticComplexity: number;
+    cognitiveLoad: number;
+    learningCurve: 'smooth' | 'moderate' | 'steep';
+    recommendations: string[];
+  } {
+    const metrics = this.skillGraphManager.getGraphMetrics();
+    const levels = this.skillGraphManager.getLevels();
+    
+    // Calculate cyclomatic complexity (edges - nodes + 2)
+    const cyclomaticComplexity = metrics.totalEdges - metrics.totalNodes + 2;
+    
+    // Calculate cognitive load based on branching factor and depth
+    const cognitiveLoad = metrics.avgBranchingFactor * metrics.maxDepth;
+    
+    // Determine learning curve
+    let learningCurve: 'smooth' | 'moderate' | 'steep' = 'moderate';
+    if (cognitiveLoad < 3) learningCurve = 'smooth';
+    else if (cognitiveLoad > 8) learningCurve = 'steep';
+    
+    // Generate recommendations
+    const recommendations: string[] = [];
+    if (cyclomaticComplexity > 10) {
+      recommendations.push('Consider breaking down complex skill dependencies');
+    }
+    if (metrics.avgBranchingFactor > 3) {
+      recommendations.push('High branching factor detected - consider focusing on core paths');
+    }
+    if (metrics.maxDepth > 6) {
+      recommendations.push('Deep learning path - consider intermediate milestones');
+    }
+    
+    return {
+      cyclomaticComplexity,
+      cognitiveLoad,
+      learningCurve,
+      recommendations
     };
   }
 

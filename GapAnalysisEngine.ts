@@ -1,5 +1,5 @@
-import { Skill, SkillGraph, UserContext, SkillGap } from '../types';
-import { TopologicalSort } from '../algorithms/TopologicalSort';
+import { Skill, SkillGraph, UserContext, SkillGap } from './index';
+import { TopologicalSort } from './TopologicalSort';
 
 export class GapAnalysisEngine {
   analyzeGaps(userContext: UserContext, skillGraph: SkillGraph, targetSkills: string[]): SkillGap[] {
