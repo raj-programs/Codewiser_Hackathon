@@ -204,7 +204,7 @@ export class RoadmapGenerator {
     
     skillGaps.forEach(gap => relevantSkills.add(gap.skillId));
     targetSkills.forEach(skillId => relevantSkills.add(skillId));
-    userContext.currentSkills.forEach(skillId => relevantSkills.add(skillId));
+    userContext.currentSkills.forEach((skillId : string) => relevantSkills.add(skillId));
 
     const skillGraph = this.skillGraphManager.getGraph();
     const sortedSkillIds = TopologicalSort.sortSubset(skillGraph, relevantSkills);

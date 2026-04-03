@@ -150,6 +150,7 @@ export class SkillGraphManager {
     }
     return newGraph;
   }
+<<<<<<< HEAD
 
   // Enhanced DAG methods
   getLongestPath(sourceId?: string): { path: string[]; totalHours: number } {
@@ -309,3 +310,6 @@ export class SkillGraphManager {
     };
   }
 }
+=======
+}
+>>>>>>> c047648de758ac8f043c0a1a2395c78347ea2ca2
